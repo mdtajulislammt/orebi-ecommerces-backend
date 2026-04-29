@@ -14,6 +14,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiExcludeController,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -26,9 +27,9 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageGateway } from './message.gateway';
 import { MessageService } from './message.service';
-
 @ApiBearerAuth()
 @ApiTags('Message')
+@ApiExcludeController()
 @UseGuards(JwtAuthGuard)
 @Controller('chat/message')
 export class MessageController {

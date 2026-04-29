@@ -14,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiExcludeController,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -28,6 +29,7 @@ import {
 import { PostCommunityService } from './postcommunity.service';
 
 @ApiTags('Post Community')
+@ApiExcludeController()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('post-community')

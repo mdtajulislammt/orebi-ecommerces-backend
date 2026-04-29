@@ -1,5 +1,5 @@
 // external imports
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -43,6 +43,13 @@ async function bootstrap() {
       forbidNonWhitelisted: false,
       transformOptions: {
         enableImplicitConversion: true,
+      },
+      // Eita add korun error nesting komanor jonno
+      exceptionFactory: (errors) => {
+        const message = errors
+          .map((error) => Object.values(error.constraints)[0])
+          .join(', ');
+        return new BadRequestException(message);
       },
     }),
   );

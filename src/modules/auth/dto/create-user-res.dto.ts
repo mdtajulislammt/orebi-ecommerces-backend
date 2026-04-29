@@ -28,9 +28,9 @@ export class CreateUserResDto {
 
   @ApiPropertyOptional({
     enum: UserType,
-    default: UserType.SEEKER,
+    default: UserType.CLIENT,
   })
-  @ApiProperty({ example: UserType.SEEKER })
+  @ApiProperty({ example: UserType.CLIENT })
   @IsOptional()
   @IsEnum(UserType)
   type?: UserType;

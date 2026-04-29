@@ -83,6 +83,8 @@ model User {
   role_users            RoleUser[]
   ucodes                Ucode[]
   user_payment_methods  UserPaymentMethod[]
+  reviews               Review[]
+  orders                Order[]
 
   @@map("users")
 }
@@ -258,17 +260,17 @@ model video_calls {
 }
 
 model live_streams {
-  id             String    @id @default(uuid())
-  room_name      String    @unique
-  host_id        String
-  title          String?
-  is_active      Boolean   @default(true)
-  recording_url  String?   // Auto-record houar por S3 link ekhane thakbe
-  status         String    @default("streaming") // streaming, completed, failed
-  created_at     DateTime  @default(now())
-  ended_at       DateTime?
-  
-  host           User      @relation(fields: [host_id], references: [id])
+  id            String    @id @default(uuid())
+  room_name     String    @unique
+  host_id       String
+  title         String?
+  is_active     Boolean   @default(true)
+  recording_url String? // Auto-record houar por S3 link ekhane thakbe
+  status        String    @default("streaming") // streaming, completed, failed
+  created_at    DateTime  @default(now())
+  ended_at      DateTime?
+
+  host User @relation(fields: [host_id], references: [id])
 }
 
 model Role {
@@ -439,4 +441,117 @@ enum MessageStatus {
   DELIVERED
   READ
   PENDING
+}
+
+model Category {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  slug       String    @unique
+  products   Product[]
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  @@map("categories")
+  @@index([slug]) // Slug indexing for faster SEO lookup
+}
+
+model Brand {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  products   Product[]
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  @@map("brands")
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String   @db.Text
+  price          Decimal  @db.Decimal(10, 2)
+  discount_price Decimal? @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  thumbnail      String
+  images         String[]
+  colors         String[]
+  sizes          String[]
+  
+  // Rating meta-data (Denormalization for performance)
+  avg_rating     Float    @default(0.0)
+  total_reviews  Int      @default(0)
+
+  // Relations
+  category_id String?
+  category    Category? @relation(fields: [category_id], references: [id])
+  brand_id    String?
+  brand       Brand?    @relation(fields: [brand_id], references: [id])
+
+  order_items OrderItem[]
+  reviews     Review[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("products")
+  @@index([category_id]) // Filter indexing
+  @@index([brand_id])    // Filter indexing
+  @@index([price])       // Price range filtering performance
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  rating     Int      @default(5)
+  comment    String?  @db.Text
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  product_id String
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+
+  @@map("reviews")
+  @@index([product_id])
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  total_amount Decimal     @db.Decimal(10, 2)
+  status       OrderStatus @default(PENDING)
+  
+  // Tracking (Optional but recommended for SaaS)
+  tracking_id  String?     @unique
+
+  user_id String
+  user    User        @relation(fields: [user_id], references: [id])
+  items   OrderItem[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("orders")
+  @@index([user_id])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  order_id   String
+  order      Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id String
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Restrict) 
+  // Restrict: Product delete kora jabe na jodi kono order thake (Business Safety)
+  
+  quantity   Int
+  unit_price Decimal @db.Decimal(10, 2)
+
+  @@map("order_items")
 }

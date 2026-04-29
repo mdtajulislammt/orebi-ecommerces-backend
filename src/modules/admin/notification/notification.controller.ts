@@ -13,6 +13,7 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiExcludeController,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -27,6 +28,7 @@ import { JwtAuthGuard } from '../../../modules/auth/guards/jwt-auth.guard';
 import { NotificationService } from './notification.service';
 
 @ApiBearerAuth()
+@ApiExcludeController()
 @ApiTags('Notification')
 @UseGuards(JwtAuthGuard)
 // @Roles(Role.ADMIN)
@@ -43,7 +45,7 @@ export class NotificationController {
   })
   @Get()
   async findAll(@Req() req: Request) {
-const user_id = req.user.userId;
+    const user_id = req.user.userId;
     try {
       const notification = await this.notificationService.findAll(user_id);
 

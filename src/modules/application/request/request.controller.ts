@@ -20,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiExcludeController,
   ApiOperation,
   ApiQuery,
   ApiResponse,
@@ -31,6 +32,7 @@ import { CreateFeedbackDto, CreateRequestDto } from './dto/create-request.dto';
 import { RequestService } from './request.service';
 
 @ApiTags('Help Requests')
+@ApiExcludeController()
 @ApiBearerAuth()
 @Controller('requests')
 @UseGuards(JwtAuthGuard)
