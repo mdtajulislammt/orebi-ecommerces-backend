@@ -101,6 +101,86 @@ export class OrderService {
       data: order,
     };
   }
+  async getAllOrders(search?: string, page: number = 1, limit: number = 10) {
+    try {
+      const skip = (page - 1) * limit;
+
+      // 1. Build dynamic filter
+      const where: any = {};
+
+      if (search) {
+        where.user = {
+          name: {
+            contains: search,
+            mode: 'insensitive', // Case-insensitive search
+          },
+        };
+      }
+
+      // 2. Fetch data and total count in parallel
+      const [orders, total_items] = await Promise.all([
+        this.prisma.order.findMany({
+          where,
+          include: {
+            user: {
+              // Ensure you include user to get the customer name
+              select: { name: true, email: true },
+            },
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    thumbnail: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.order.count({ where }),
+      ]);
+
+      // 3. URL Transformation & Data Mapping
+      const mappedOrders = orders.map((order) => ({
+        ...order,
+        total_amount: Number(order.total_amount),
+        items: order.items.map((item) => ({
+          ...item,
+          unit_price: Number(item.unit_price),
+          product: {
+            ...item.product,
+            thumbnail: item.product?.thumbnail
+              ? TajulStorage.url(item.product.thumbnail)
+              : null,
+          },
+        })),
+      }));
+
+      // 4. Calculate Meta Data
+      const total_pages = Math.ceil(total_items / limit);
+
+      return {
+        success: true,
+        message: 'Orders fetched successfully',
+        data: mappedOrders,
+        meta: {
+          total_items,
+          total_pages,
+          current_page: page,
+          limit,
+        },
+      };
+    } catch (error) {
+      console.error('Fetch Orders Error:', error);
+      throw new InternalServerErrorException('Failed to fetch orders.');
+    }
+  }
 
   async getUserOrders(userId: string) {
     try {

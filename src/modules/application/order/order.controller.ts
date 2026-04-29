@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -22,6 +22,18 @@ export class OrderController {
       message: 'Order created successfully',
       data: order,
     };
+  }
+
+@Get("all-order")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all orders with search and pagination' })
+  async getAllOrders(
+    @Query('search') search?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.orderService.getAllOrders(search, Number(page), Number(limit));
   }
 
   @Get('my-orders')
