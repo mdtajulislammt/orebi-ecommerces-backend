@@ -9,6 +9,7 @@ import { CallModule } from 'src/modules/application/live/call/call.module';
 import { LivekitModule } from 'src/modules/application/live/livekit/livekit.module';
 import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { OrderModule } from './order/order.module';
     LivekitModule,
     ProductModule,
     OrderModule,
+    ReviewModule,
   ],
 })
 export class ApplicationModule {}

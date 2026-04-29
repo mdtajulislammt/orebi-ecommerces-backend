@@ -1,14 +1,16 @@
 // external imports
 import { Command, CommandRunner } from 'nest-commander';
 // internal imports
-import appConfig from '../config/app.config';
 import { StringHelper } from '../common/helper/string.helper';
 import { UserRepository } from '../common/repository/user/user.repository';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Command({ name: 'seed', description: 'prisma db seed' })
 export class SeedCommand extends CommandRunner {
-  constructor(private readonly prisma: PrismaService, private readonly userRepository: UserRepository) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userRepository: UserRepository,
+  ) {
     super();
   }
   async run(passedParam: string[]): Promise<void> {
@@ -36,19 +38,59 @@ export class SeedCommand extends CommandRunner {
 
   //---- user section ----
   async userSeed() {
-    // system admin, user id: 1
-    const systemUser = await this.userRepository.createSuAdminUser({
-      username: appConfig().defaultUser.system.username,
-      email: appConfig().defaultUser.system.email,
-      password: appConfig().defaultUser.system.password,
+    // 1. Admin User
+    let adminUser = await this.prisma.user.findUnique({
+      where: { email: 'admin@gmail.com' },
     });
 
-    await this.prisma.roleUser.create({
-      data: {
-        user_id: systemUser.id,
-        role_id: '1',
-      },
+    if (!adminUser) {
+      adminUser = await this.userRepository.createSuAdminUser({
+        username: 'admin',
+        email: 'admin@gmail.com',
+        password: '123456789',
+      });
+
+      await this.prisma.user.update({
+        where: { id: adminUser.id },
+        data: { type: 'ADMIN' },
+      });
+
+      await this.prisma.roleUser.upsert({
+        where: { role_id_user_id: { role_id: '1', user_id: adminUser.id } },
+        create: { role_id: '1', user_id: adminUser.id },
+        update: {},
+      });
+      console.log('Admin created: admin@gmail.com / password');
+    } else {
+      console.log('Admin already exists.');
+    }
+
+    // 2. Client User
+    let clientUser = await this.prisma.user.findUnique({
+      where: { email: 'client@gmail.com' },
     });
+
+    if (!clientUser) {
+      clientUser = await this.userRepository.createSuAdminUser({
+        username: 'client',
+        email: 'client@gmail.com',
+        password: '123456789',
+      });
+
+      await this.prisma.user.update({
+        where: { id: clientUser.id },
+        data: { type: 'CLIENT', balance: 1000.0 },
+      });
+
+      await this.prisma.roleUser.upsert({
+        where: { role_id_user_id: { role_id: '4', user_id: clientUser.id } },
+        create: { role_id: '4', user_id: clientUser.id },
+        update: {},
+      });
+      console.log('Client created: client@gmail.com / password');
+    } else {
+      console.log('Client already exists.');
+    }
   }
 
   async permissionSeed() {
@@ -102,6 +144,7 @@ export class SeedCommand extends CommandRunner {
 
     await this.prisma.permission.createMany({
       data: permissions,
+      skipDuplicates: true,
     });
   }
 
@@ -122,6 +165,7 @@ export class SeedCommand extends CommandRunner {
     }
     await this.prisma.permissionRole.createMany({
       data: adminPermissionRoleArray,
+      skipDuplicates: true,
     });
     // -----------
 
@@ -141,6 +185,7 @@ export class SeedCommand extends CommandRunner {
     }
     await this.prisma.permissionRole.createMany({
       data: projectAdminPermissionRoleArray,
+      skipDuplicates: true,
     });
     // -----------
 
@@ -166,6 +211,7 @@ export class SeedCommand extends CommandRunner {
     }
     await this.prisma.permissionRole.createMany({
       data: projectManagerPermissionRoleArray,
+      skipDuplicates: true,
     });
     // -----------
 
@@ -190,6 +236,7 @@ export class SeedCommand extends CommandRunner {
     }
     await this.prisma.permissionRole.createMany({
       data: memberPermissionRoleArray,
+      skipDuplicates: true,
     });
     // -----------
 
@@ -212,6 +259,7 @@ export class SeedCommand extends CommandRunner {
     }
     await this.prisma.permissionRole.createMany({
       data: viewerPermissionRoleArray,
+      skipDuplicates: true,
     });
     // -----------
   }
@@ -247,6 +295,7 @@ export class SeedCommand extends CommandRunner {
           name: 'viewer',
         },
       ],
+      skipDuplicates: true,
     });
   }
 }

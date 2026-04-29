@@ -195,6 +195,7 @@ export class AuthController {
   }
 
   // *forgot password
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Forgot password' })
   @ApiBody({
     type: ForgotPasswordDto,
@@ -261,7 +262,7 @@ export class AuthController {
   }
 
   // *reset password if user forget the password
-  // @ApiExcludeEndpoint()
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Reset password' })
   @ApiBody({
     type: ResetPasswordDto,
@@ -319,6 +320,7 @@ export class AuthController {
   }
 
   // *veify token
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Verify reset password token' })
   @ApiBody({
     type: VerifyTokenDto,
@@ -351,6 +353,7 @@ export class AuthController {
   }
 
   // change password if user want to change the password
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Change password' })
   @ApiBody({
     type: ChangePasswordDto,
@@ -597,6 +600,7 @@ export class AuthController {
   // --------- end 2FA ---------
 
   @ApiOperation({ summary: 'Get all volunteers' })
+  @ApiExcludeEndpoint()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOkResponse({

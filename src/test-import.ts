@@ -1,21 +1,13 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
-
-// external imports
+console.log('Test import started');
 import { Module } from '@nestjs/common';
+console.log('Module imported');
 import { CommandFactory } from 'nest-commander';
-// internal imports
+console.log('CommandFactory imported');
 import { PrismaService } from './prisma/prisma.service';
+console.log('PrismaService imported');
 import { SeedCommand } from './command/seed.command';
+console.log('SeedCommand imported');
 import { UserRepository } from './common/repository/user/user.repository';
-
-@Module({
-  providers: [SeedCommand, PrismaService, UserRepository],
-})
-export class AppModule {}
-
-async function bootstrap() {
-  await CommandFactory.run(AppModule);
-}
-
-bootstrap();
+console.log('UserRepository imported');

@@ -19,7 +19,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "cmd": "cross-env PRISMA_ENV=1 ts-node src/cmd.ts"
+    "cmd": "cross-env PRISMA_ENV=1 ts-node -r tsconfig-paths/register src/cmd.ts"
   },
   "dependencies": {
     "@casl/ability": "6.7.3",
@@ -49,6 +49,7 @@
     "cross-env": "7.0.3",
     "date-fns": "^4.1.0",
     "dayjs": "1.11.13",
+    "dotenv": "^17.4.2",
     "ejs": "^5.0.1",
     "firebase-admin": "^13.7.0",
     "helmet": "8.1.0",
