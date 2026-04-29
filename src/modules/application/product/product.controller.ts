@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -26,6 +27,7 @@ import { RolesGuard } from 'src/common/guard/role/roles.guard';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
+import { UpdateProductDto } from 'src/modules/application/product/dto/update-product.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -105,6 +107,31 @@ export class ProductController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async findAll(@Query() query: any) {
     return await this.productService.getAllProducts(query);
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update existing product (Admin Only)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'thumbnail', maxCount: 1 },
+      { name: 'images', maxCount: 10 },
+    ]),
+  )
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductDto, // Suggest creating an UpdateProductDto extending PartialType
+    @Req() req: any,
+    @UploadedFiles()
+    files: {
+      thumbnail?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
+  ) {
+    const admin_id = req.user.userId;
+    return this.productService.updateProduct(id, admin_id, dto, files);
   }
 
   @Get(':slug')

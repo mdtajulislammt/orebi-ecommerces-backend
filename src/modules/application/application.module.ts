@@ -10,6 +10,8 @@ import { LivekitModule } from 'src/modules/application/live/livekit/livekit.modu
 import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
 import { ReviewModule } from './review/review.module';
+import { BrandModule } from './brand/brand.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { ReviewModule } from './review/review.module';
     ProductModule,
     OrderModule,
     ReviewModule,
+    BrandModule,
+    CategoryModule,
   ],
 })
 export class ApplicationModule {}

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -187,10 +188,114 @@ export class ProductService {
     }
   }
 
-  async getSingleProduct(slug: string) {
+  async updateProduct(
+    product_id: string,
+    admin_id: string,
+    dto: any, // existing_images: string[] add kora thakbe ekhane
+    files: {
+      thumbnail?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
+  ) {
+    const [admin, existingProduct] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: admin_id } }),
+      this.prisma.product.findUnique({ where: { id: product_id } }),
+    ]);
+
+    if (!admin || admin.type !== 'ADMIN')
+      throw new ForbiddenException('Admin access required');
+    if (!existingProduct) throw new NotFoundException('Product not found');
+
+    const { existing_images, ...rest } = dto;
+    let final_images: string[] = [];
+
+    // --- GALLERY IMAGE LOGIC ---
+
+    // 1. Determine which old images to delete
+    // Parse existing_images if it comes as a string (common in multipart/form-data)
+    const images_to_keep = Array.isArray(existing_images)
+      ? existing_images
+      : existing_images
+        ? [existing_images]
+        : [];
+
+    const images_to_delete = existingProduct.images.filter(
+      (img) => !images_to_keep.includes(img),
+    );
+
+    // 2. Delete removed images from storage
+    await Promise.all(
+      images_to_delete.map((path) =>
+        TajulStorage.delete(path).catch(() => null),
+      ),
+    );
+
+    // 3. Start with the kept images
+    final_images = [...images_to_keep];
+
+    // 4. Upload and add new images
+    if (files?.images?.length) {
+      const new_uploads = await Promise.all(
+        files.images.map(async (file) => {
+          const path = `products/gallery/${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`;
+          await TajulStorage.put(path, file.buffer);
+          return path;
+        }),
+      );
+      final_images = [...final_images, ...new_uploads];
+    }
+
+    // --- THUMBNAIL LOGIC ---
+    let thumbnail_path = existingProduct.thumbnail;
+    if (files?.thumbnail?.length) {
+      if (thumbnail_path)
+        await TajulStorage.delete(thumbnail_path).catch(() => null);
+      const file = files.thumbnail[0];
+      thumbnail_path = `products/thumbnails/${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`;
+      await TajulStorage.put(thumbnail_path, file.buffer);
+    }
+
+    // --- DATABASE UPDATE ---
+    const updatedProduct = await this.prisma.product.update({
+      where: { id: product_id },
+      data: {
+        name: rest.name ?? undefined,
+        slug: rest.name
+          ? `${slugify(rest.name, { lower: true })}-${Date.now()}`
+          : undefined,
+        price: rest.price ? parseFloat(rest.price) : undefined,
+        stock: rest.stock ? parseInt(rest.stock) : undefined,
+        thumbnail: thumbnail_path,
+        images: final_images, // Balanced list of kept + new images
+        colors: rest.colors
+          ? Array.isArray(rest.colors)
+            ? rest.colors
+            : [rest.colors]
+          : undefined,
+        sizes: rest.sizes
+          ? Array.isArray(rest.sizes)
+            ? rest.sizes
+            : [rest.sizes]
+          : undefined,
+        category: rest.category_id
+          ? { connect: { id: rest.category_id } }
+          : undefined,
+        brand: rest.brand_id ? { connect: { id: rest.brand_id } } : undefined,
+      },
+    });
+    return {
+      success: true,
+      message: 'Product updated successfully',
+      data: updatedProduct,
+    };
+  }
+
+  async getSingleProduct(identifier: string) {
     try {
-      const product = await this.prisma.product.findUnique({
-        where: { slug },
+      const product = await this.prisma.product.findFirst({
+        where: {
+          OR: [{ id: identifier }, { slug: identifier }],
+        },
         include: {
           category: { select: { id: true, name: true, slug: true } },
           brand: { select: { id: true, name: true } },
