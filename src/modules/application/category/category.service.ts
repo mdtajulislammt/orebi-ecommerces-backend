@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import slugify from 'slugify';
+import { StringHelper } from 'src/common/helper/string.helper';
 import { UpdateCategoryDto } from 'src/modules/application/category/dto/update-category.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -13,7 +13,7 @@ export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateCategoryDto) {
-    const slug = slugify(dto.name, { lower: true });
+    const slug = StringHelper.slugify(dto.name);
 
     const existing = await this.prisma.category.findUnique({ where: { slug } });
     if (existing) throw new ConflictException('Category already exists');
@@ -40,7 +40,7 @@ export class CategoryService {
 
     await this.prisma.category.update({
       where: { id },
-      data: { name: dto.name, slug: slugify(dto.name, { lower: true }) },
+      data: { name: dto.name, slug: StringHelper.slugify(dto.name) },
     });
     return {
       success: true,

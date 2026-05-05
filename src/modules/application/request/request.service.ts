@@ -11,7 +11,7 @@ import appConfig from 'src/config/app.config';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFeedbackDto, CreateRequestDto } from './dto/create-request.dto';
-import { Prisma, RequestStatus, UserType } from 'prisma/generated';
+import { Prisma, RequestStatus, UserType } from '@prisma/client';
 
 @Injectable()
 export class RequestService {

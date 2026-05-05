@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import slugify from 'slugify';
+import { StringHelper } from 'src/common/helper/string.helper';
 import { TajulStorage } from 'src/common/lib/Disk/TajulStorage';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -43,7 +43,7 @@ export class ProductService {
     }
 
     // Slug generation logic
-    const slug = `${slugify(name, { lower: true })}-${Date.now()}`;
+    const slug = `${StringHelper.slugify(name)}-${Date.now()}`;
 
     // 1. File Upload Processing
     let thumbnail_path: string | null = null;
@@ -261,7 +261,7 @@ export class ProductService {
       data: {
         name: rest.name ?? undefined,
         slug: rest.name
-          ? `${slugify(rest.name, { lower: true })}-${Date.now()}`
+          ? `${StringHelper.slugify(rest.name)}-${Date.now()}`
           : undefined,
         price: rest.price ? parseFloat(rest.price) : undefined,
         stock: rest.stock ? parseInt(rest.stock) : undefined,

@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { UserType } from 'prisma/generated';
+import { UserType } from '@prisma/client';
 import { TajulStorage } from 'src/common/lib/Disk/TajulStorage';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
