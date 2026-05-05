@@ -1,5 +1,19 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderService } from './order.service';
@@ -24,16 +38,19 @@ export class OrderController {
     };
   }
 
-@Get("all-order")
+  @Get('all-order')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all orders with search and pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   async getAllOrders(
     @Query('search') search?: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ) {
-    return this.orderService.getAllOrders(search, Number(page), Number(limit));
+    return this.orderService.getAllOrders(search, page, limit);
   }
 
   @Get('my-orders')
@@ -43,5 +60,14 @@ export class OrderController {
   async getMyOrders(@Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.getUserOrders(userId);
+  }
+
+  //get single order
+  @Get('single/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get single order' })
+  async getSingleOrder(@Param('id') id: string) {
+    return this.orderService.getSingleOrder(id);
   }
 }

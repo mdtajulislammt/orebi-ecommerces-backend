@@ -451,8 +451,8 @@ model Category {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
 
-  @@map("categories")
   @@index([slug]) // Slug indexing for faster SEO lookup
+  @@map("categories")
 }
 
 model Brand {
@@ -477,10 +477,10 @@ model Product {
   images         String[]
   colors         String[]
   sizes          String[]
-  
+
   // Rating meta-data (Denormalization for performance)
-  avg_rating     Float    @default(0.0)
-  total_reviews  Int      @default(0)
+  avg_rating    Float @default(0.0)
+  total_reviews Int   @default(0)
 
   // Relations
   category_id String?
@@ -494,25 +494,25 @@ model Product {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@map("products")
   @@index([category_id]) // Filter indexing
-  @@index([brand_id])    // Filter indexing
-  @@index([price])       // Price range filtering performance
+  @@index([brand_id]) // Filter indexing
+  @@index([price]) // Price range filtering performance
+  @@map("products")
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  rating     Int      @default(5)
-  comment    String?  @db.Text
+  id         String  @id @default(cuid())
+  rating     Int     @default(5)
+  comment    String? @db.Text
   user_id    String
-  user       User     @relation(fields: [user_id], references: [id])
+  user       User    @relation(fields: [user_id], references: [id])
   product_id String
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
 
-  @@map("reviews")
   @@index([product_id])
+  @@map("reviews")
 }
 
 enum OrderStatus {
@@ -527,9 +527,9 @@ model Order {
   id           String      @id @default(cuid())
   total_amount Decimal     @db.Decimal(10, 2)
   status       OrderStatus @default(PENDING)
-  
+
   // Tracking (Optional but recommended for SaaS)
-  tracking_id  String?     @unique
+  tracking_id String? @unique
 
   user_id String
   user    User        @relation(fields: [user_id], references: [id])
@@ -538,8 +538,8 @@ model Order {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@map("orders")
   @@index([user_id])
+  @@map("orders")
 }
 
 model OrderItem {
@@ -547,9 +547,9 @@ model OrderItem {
   order_id   String
   order      Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product_id String
-  product    Product @relation(fields: [product_id], references: [id], onDelete: Restrict) 
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Restrict)
   // Restrict: Product delete kora jabe na jodi kono order thake (Business Safety)
-  
+
   quantity   Int
   unit_price Decimal @db.Decimal(10, 2)
 

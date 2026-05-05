@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { DateHelper } from '../../../common/helper/date.helper';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
-import { PrismaService } from '../../../prisma/prisma.service';
-import { DateHelper } from '../../../common/helper/date.helper';
 
 @Injectable()
 export class ContactService {
@@ -45,34 +45,66 @@ export class ContactService {
     }
   }
 
-  async findAll({ q = null, status = null }: { q?: string; status?: number }) {
+  async findAll({
+    q = null,
+    page = 1,
+    limit = 10,
+  }: {
+    q?: string;
+    page?: number;
+    limit?: number;
+  }) {
     try {
-      const whereClause = {};
+      const currentPage = Number(page) || 1;
+      const currentLimit = Number(limit) || 10;
+      const skip = (currentPage - 1) * currentLimit;
+
+      const where: any = {};
       if (q) {
-        whereClause['OR'] = [
+        where.OR = [
           { first_name: { contains: q, mode: 'insensitive' } },
           { last_name: { contains: q, mode: 'insensitive' } },
           { email: { contains: q, mode: 'insensitive' } },
           { phone_number: { contains: q, mode: 'insensitive' } },
+          { message: { contains: q, mode: 'insensitive' } },
         ];
       }
-      if (status) {
-        whereClause['status'] = Number(status);
-      }
 
-      const contacts = await this.prisma.contact.findMany({
-        select: {
-          id: true,
-          first_name: true,
-          last_name: true,
-          email: true,
-          phone_number: true,
-          message: true,
-        },
-      });
+      const [contacts, total_items] = await Promise.all([
+        this.prisma.contact.findMany({
+          where,
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            phone_number: true,
+            message: true,
+            created_at: true,
+          },
+          orderBy: { created_at: 'desc' },
+          skip,
+          take: currentLimit,
+        }),
+        this.prisma.contact.count({ where }),
+      ]);
+
+      const mappedContacts = contacts.map((contact) => ({
+        ...contact,
+        createdAt: contact.created_at,
+      }));
+
+      const total_pages = Math.ceil(total_items / currentLimit);
+
       return {
         success: true,
-        data: contacts,
+        data: mappedContacts,
+        meta: {
+          total_items,
+          total_pages,
+          current_page: currentPage,
+          limit: currentLimit,
+        },
       };
     } catch (error) {
       return {
@@ -93,11 +125,23 @@ export class ContactService {
           email: true,
           phone_number: true,
           message: true,
+          created_at: true,
         },
       });
+
+      if (!contact) {
+        return {
+          success: false,
+          message: 'Contact not found',
+        };
+      }
+
       return {
         success: true,
-        data: contact,
+        data: {
+          ...contact,
+          createdAt: contact.created_at,
+        },
       };
     } catch (error) {
       return {
@@ -109,6 +153,14 @@ export class ContactService {
 
   async update(id: string, updateContactDto: UpdateContactDto) {
     try {
+      const contact = await this.prisma.contact.findUnique({ where: { id } });
+      if (!contact) {
+        return {
+          success: false,
+          message: 'Contact not found',
+        };
+      }
+
       const data = {};
       if (updateContactDto.first_name) {
         data['first_name'] = updateContactDto.first_name;
@@ -147,6 +199,14 @@ export class ContactService {
 
   async remove(id: string) {
     try {
+      const contact = await this.prisma.contact.findUnique({ where: { id } });
+      if (!contact) {
+        return {
+          success: false,
+          message: 'Contact not found',
+        };
+      }
+
       await this.prisma.contact.delete({
         where: { id },
       });

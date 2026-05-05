@@ -101,9 +101,11 @@ export class OrderService {
       data: order,
     };
   }
-  async getAllOrders(search?: string, page: number = 1, limit: number = 10) {
+  async getAllOrders(search?: string, page?: number, limit?: number) {
     try {
-      const skip = (page - 1) * limit;
+      const currentPage = Number(page) || 1;
+      const currentLimit = Number(limit) || 10;
+      const skip = (currentPage - 1) * currentLimit;
 
       // 1. Build dynamic filter
       const where: any = {};
@@ -141,7 +143,7 @@ export class OrderService {
           },
           orderBy: { created_at: 'desc' },
           skip,
-          take: limit,
+          take: currentLimit,
         }),
         this.prisma.order.count({ where }),
       ]);
@@ -163,7 +165,7 @@ export class OrderService {
       }));
 
       // 4. Calculate Meta Data
-      const total_pages = Math.ceil(total_items / limit);
+      const total_pages = Math.ceil(total_items / currentLimit);
 
       return {
         success: true,
@@ -172,8 +174,8 @@ export class OrderService {
         meta: {
           total_items,
           total_pages,
-          current_page: page,
-          limit,
+          current_page: currentPage,
+          limit: currentLimit,
         },
       };
     } catch (error) {
@@ -229,6 +231,61 @@ export class OrderService {
     } catch (error) {
       console.error('Fetch Orders Error:', error);
       throw new InternalServerErrorException('Failed to fetch your orders.');
+    }
+  }
+
+  // single get
+  async getSingleOrder(orderId: string) {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  thumbnail: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+
+      // URL Transformation
+      const mappedOrder = {
+        ...order,
+        total_amount: Number(order.total_amount),
+        items: order.items.map((item) => ({
+          ...item,
+          unit_price: Number(item.unit_price),
+          product: {
+            ...item.product,
+            thumbnail: item.product?.thumbnail
+              ? TajulStorage.url(item.product.thumbnail)
+              : null,
+          },
+        })),
+      };
+
+      return {
+        success: true,
+        message: 'Order fetched successfully',
+        data: mappedOrder,
+      };
+    } catch (error) {
+      console.error('Fetch Order Error:', error);
+      throw new InternalServerErrorException('Failed to fetch order.');
     }
   }
 }

@@ -9,7 +9,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -38,17 +43,25 @@ export class ContactController {
   }
 
   @ApiOperation({ summary: 'Read all contacts' })
-  @Get()
-  async findAll(@Query() query: { q?: string; status?: number }) {
+  @ApiQuery({ name: 'q', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Get('all')
+  async findAll(
+    @Query('q') q?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     try {
-      const searchQuery = query.q;
-      const status = query.status;
-
-      const contacts = await this.contactService.findAll({
+      const searchQuery = search || q;
+      const data = await this.contactService.findAll({
         q: searchQuery,
-        status: status,
+        page,
+        limit,
       });
-      return contacts;
+      return data;
     } catch (error) {
       return {
         success: false,
