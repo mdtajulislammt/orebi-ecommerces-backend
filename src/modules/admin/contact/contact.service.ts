@@ -93,6 +93,7 @@ export class ContactService {
         ...contact,
         createdAt: contact.created_at,
       }));
+      
 
       const total_pages = Math.ceil(total_items / currentLimit);
 
